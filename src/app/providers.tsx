@@ -2,6 +2,7 @@
 "use client";
 
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
+import { AuthContextProvider } from "./context/AuthProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const theme = extendTheme({
@@ -14,5 +15,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       offWhite: "#E0E1DD",
     },
   });
-  return <ChakraProvider theme={theme}>{children}</ChakraProvider>;
+  return (
+    <ChakraProvider theme={theme}>
+      <AuthContextProvider>{children}</AuthContextProvider>
+    </ChakraProvider>
+  );
 }

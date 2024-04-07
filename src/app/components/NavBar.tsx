@@ -47,11 +47,20 @@ import {
   SunIcon,
 } from "@chakra-ui/icons";
 import { PenIcon } from "../assets/PenIcon";
+import LoginForm from "../forms/LoginForm";
+import RegisterForm from "../forms/RegisterForm";
+import { useAuth } from "../context/AuthProvider";
+
+type Inputs = {
+  email: string;
+  password: string;
+};
 
 export default function Navbar() {
   const { isOpen, onToggle } = useDisclosure();
   const { colorMode, toggleColorMode } = useColorMode();
   const isLoggedIn: boolean = false;
+  const { user } = useAuth();
   const {
     isOpen: isCreateOpen,
     onOpen: onCreateOpen,
@@ -67,6 +76,7 @@ export default function Navbar() {
     onOpen: onRegisterOpen,
     onClose: onRegisterClose,
   } = useDisclosure();
+
   return (
     <Box>
       <Flex
@@ -136,7 +146,7 @@ export default function Navbar() {
           <Button onClick={toggleColorMode}>
             {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
           </Button>
-          {isLoggedIn ? (
+          {user.uid ? (
             <>
               <Menu>
                 <MenuButton
@@ -212,12 +222,7 @@ export default function Navbar() {
           <ModalCloseButton />
           <ModalBody>
             Login
-            <FormControl>
-              <FormLabel>Email</FormLabel>
-              <Input name="email" />
-              <FormLabel>Password</FormLabel>
-              <Input name="password" />
-            </FormControl>
+            <LoginForm />
           </ModalBody>
           <ModalFooter>
             <Button onClick={onLoginClose}>Close</Button>
@@ -230,15 +235,8 @@ export default function Navbar() {
           <ModalHeader>Modal Title</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            Login
-            <FormControl>
-              <FormLabel>Email</FormLabel>
-              <Input name="email" />
-              <FormLabel>Password</FormLabel>
-              <Input name="password" />
-              <FormLabel>Username</FormLabel>
-              <Input name="username" />
-            </FormControl>
+            Register
+            <RegisterForm />
           </ModalBody>
           <ModalFooter>
             <Button onClick={onRegisterClose}>Close</Button>
