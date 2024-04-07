@@ -1,8 +1,18 @@
 // app/providers.tsx
-'use client'
+"use client";
 
-import { ChakraProvider } from '@chakra-ui/react'
+import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <ChakraProvider>{children}</ChakraProvider>
+  const theme = extendTheme({
+    //override defaults for components e.g button
+    colors: {
+      darkGrey: "#0D1B2A",
+      lightGrey: "#1B263B",
+      darkBlue: "#415A77",
+      lightBlue: "#778DA9",
+      offWhite: "#E0E1DD",
+    },
+  });
+  return <ChakraProvider theme={theme}>{children}</ChakraProvider>;
 }
