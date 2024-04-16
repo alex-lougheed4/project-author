@@ -49,7 +49,7 @@ import {
 import { PenIcon } from "../assets/PenIcon";
 import LoginForm from "../forms/LoginForm";
 import RegisterForm from "../forms/RegisterForm";
-import { useAuth } from "../context/AuthProvider";
+import { useUser } from "../firebase/useUser";
 
 type Inputs = {
   email: string;
@@ -59,8 +59,8 @@ type Inputs = {
 export default function Navbar() {
   const { isOpen, onToggle } = useDisclosure();
   const { colorMode, toggleColorMode } = useColorMode();
+  const userId = useUser()?.uid;
   const isLoggedIn: boolean = false;
-  const { user } = useAuth();
   const {
     isOpen: isCreateOpen,
     onOpen: onCreateOpen,
@@ -146,7 +146,7 @@ export default function Navbar() {
           <Button onClick={toggleColorMode}>
             {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
           </Button>
-          {user.uid ? (
+          {userId ? (
             <>
               <Menu>
                 <MenuButton
@@ -232,10 +232,9 @@ export default function Navbar() {
       <Modal onClose={onRegisterClose} isOpen={isRegisterOpen} isCentered>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Modal Title</ModalHeader>
+          <ModalHeader>Register</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            Register
             <RegisterForm />
           </ModalBody>
           <ModalFooter>

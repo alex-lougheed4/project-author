@@ -6,26 +6,33 @@ import {
   FormErrorMessage,
 } from "@chakra-ui/react";
 import { useForm } from "react-hook-form";
-import { useAuth } from "../context/AuthProvider";
 import { useState } from "react";
+import { signInWithGoogle } from "../firebase/auth";
 
 type LoginType = {
   email: string;
   password: string;
 };
+import { useSignInWithEmailAndPassword } from "react-firebase-hooks/auth";
+import { auth } from "../firebase/firebase";
+import { useRouter } from "next/navigation";
 
 const LoginForm = () => {
-  const [data, setData] = useState<LoginType>({
-    email: "",
-    password: "",
-  });
-  const { logIn } = useAuth();
-  const handleLogin = async (e: any) => {
-    e.preventDefault();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [signInWithEmailAndPassword] = useSignInWithEmailAndPassword(auth);
+  const router = useRouter();
+
+  const handleSignIn = async () => {
     try {
-      await logIn(data.email, data.password);
-    } catch (error: any) {
-      console.log(error.message);
+      const res = await signInWithEmailAndPassword(email, password);
+      console.log({ res });
+      sessionStorage.setItem("user", "true");
+      setEmail("");
+      setPassword("");
+      router.push("/");
+    } catch (e) {
+      console.error(e);
     }
   };
   const {
@@ -35,7 +42,7 @@ const LoginForm = () => {
   } = useForm();
 
   return (
-    <form onSubmit={handleSubmit(handleLogin)}>
+    <form onSubmit={handleSubmit(handleSignIn)}>
       <FormControl isInvalid={Boolean(errors.email)}>
         <FormLabel>Email</FormLabel>
         <Input
@@ -47,12 +54,7 @@ const LoginForm = () => {
               message: "Minimum length should be 4",
             },
           })}
-          onChange={(e: any) => {
-            setData({
-              ...data,
-              password: e.target.value,
-            });
-          }}
+          onChange={(e) => setEmail(e.target.value)}
         />
         <FormErrorMessage>
           {errors.email && errors.email.message?.toString()}
@@ -63,12 +65,7 @@ const LoginForm = () => {
         <Input
           type="password"
           name="password"
-          onChange={(e: any) => {
-            setData({
-              ...data,
-              password: e.target.value,
-            });
-          }}
+          onChange={(e) => setPassword(e.target.value)}
         />
         <FormErrorMessage>
           {errors.email && errors.email.message?.toString()}
@@ -77,6 +74,7 @@ const LoginForm = () => {
       <Button type="submit" isLoading={isSubmitting}>
         Submit
       </Button>
+      <Button onClick={signInWithGoogle}>Sign In with Google</Button>
     </form>
   );
 };

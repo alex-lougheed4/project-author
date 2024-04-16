@@ -6,8 +6,9 @@ import {
   FormErrorMessage,
 } from "@chakra-ui/react";
 import { useState } from "react";
+import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth";
 import { useForm } from "react-hook-form";
-import { useAuth } from "../context/AuthProvider";
+import { auth } from "../firebase/firebase";
 
 type RegistrationType = {
   email: string;
@@ -20,25 +21,24 @@ const RegisterForm = () => {
     register,
     formState: { errors, isSubmitting },
   } = useForm();
-  const [data, setData] = useState<RegistrationType>({
-    email: "",
-    password: "",
-  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [createUserWithEmailAndPassword] =
+    useCreateUserWithEmailAndPassword(auth);
 
-  // Use the signUp method from the AuthContext
-  const { signUp } = useAuth();
-
-  const handleRegistration = async (e: any) => {
-    e.preventDefault();
+  const handleSignUp = async () => {
     try {
-      await signUp(data.email, data.password);
-    } catch (error: any) {
-      console.log(error.message);
+      const res = await createUserWithEmailAndPassword(email, password);
+      console.log({ res });
+      sessionStorage.setItem("user", "true");
+      setEmail("");
+      setPassword("");
+    } catch (e) {
+      console.error(e);
     }
-    console.log(data);
   };
   return (
-    <form onSubmit={handleSubmit(handleRegistration)}>
+    <form onSubmit={handleSubmit(handleSignUp)}>
       <FormControl isInvalid={Boolean(errors.email)}>
         <FormLabel>Email</FormLabel>
         <Input
@@ -50,12 +50,7 @@ const RegisterForm = () => {
               message: "Minimum length should be 4",
             },
           })}
-          onChange={(e: any) => {
-            setData({
-              ...data,
-              email: e.target.value,
-            });
-          }}
+          onChange={(e) => setEmail(e.target.value)}
         />
         <FormErrorMessage>
           {errors.email && errors.email.message?.toString()}
@@ -72,12 +67,7 @@ const RegisterForm = () => {
               message: "Minimum length should be 4",
             },
           })}
-          onChange={(e: any) => {
-            setData({
-              ...data,
-              email: e.target.value,
-            });
-          }}
+          onChange={(e) => setPassword(e.target.value)}
         />
         <FormErrorMessage>
           {errors.password && errors.password.message?.toString()}
