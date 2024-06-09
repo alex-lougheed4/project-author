@@ -49,7 +49,11 @@ import {
 import { PenIcon } from "../assets/PenIcon";
 import LoginForm from "../forms/LoginForm";
 import RegisterForm from "../forms/RegisterForm";
-import { useUser } from "../firebase/useUser";
+import { useForm } from "react-hook-form";
+import { createPrompt, getUserPrompts } from "../firebase/firestore";
+import { Prompt } from "../utils/types";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../firebase/AuthContextProvider";
 
 type Inputs = {
   email: string;
@@ -57,9 +61,10 @@ type Inputs = {
 };
 
 export default function Navbar() {
+  const router = useRouter();
   const { isOpen, onToggle } = useDisclosure();
   const { colorMode, toggleColorMode } = useColorMode();
-  const userId = useUser()?.uid;
+  const { authUser, loading, signOut } = useAuth();
   const isLoggedIn: boolean = false;
   const {
     isOpen: isCreateOpen,
@@ -76,6 +81,30 @@ export default function Navbar() {
     onOpen: onRegisterOpen,
     onClose: onRegisterClose,
   } = useDisclosure();
+
+  const {
+    handleSubmit,
+    register,
+    formState: { errors, isSubmitting },
+  } = useForm();
+
+  function onCreateSubmit(values: any) {
+    console.log(`values: ${values}`);
+    const prompt: Prompt = {
+      title: values.title,
+      summary: values.summary,
+      userCreatorId: authUser?.uid,
+      createdAt: new Date(),
+      deadline: values.deadline,
+      length: values.length,
+      kudos: 0,
+    };
+    console.log(`createPrompt: ${JSON.stringify(prompt)}`);
+    return new Promise((resolve) => {
+      createPrompt(prompt);
+    });
+    console.log(`user: ${authUser}`);
+  }
 
   return (
     <Box>
@@ -132,7 +161,7 @@ export default function Navbar() {
             }}
             onClick={onCreateOpen}
           >
-            Create A Promopt
+            Create A Prompt
           </Button>
         </Flex>
         {/* Replace with Account stuff when logged in */}
@@ -146,7 +175,7 @@ export default function Navbar() {
           <Button onClick={toggleColorMode}>
             {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
           </Button>
-          {userId ? (
+          {authUser.uid ? (
             <>
               <Menu>
                 <MenuButton
@@ -171,14 +200,16 @@ export default function Navbar() {
                   </Center>
                   <br />
                   <Center>
-                    <p>Username</p>
+                    <p>{authUser?.displayName}</p>
                   </Center>
                   <br />
                   <MenuDivider />
-                  <MenuItem>Your Prompts</MenuItem>
+                  <MenuItem onClick={() => router.push("/profile/prompts")}>
+                    Your Prompts
+                  </MenuItem>
                   <MenuItem>Your Stories</MenuItem>
                   <MenuItem>Settings</MenuItem>
-                  <MenuItem>Logout</MenuItem>
+                  <MenuItem onClick={() => signOut()}>Logout</MenuItem>
                 </MenuList>
               </Menu>
 
@@ -215,7 +246,11 @@ export default function Navbar() {
           )}
         </Stack>
       </Flex>
-      <Modal onClose={onLoginClose} isOpen={isLoginOpen} isCentered>
+      <Modal
+        onClose={onLoginClose}
+        isOpen={isLoginOpen && !authUser}
+        isCentered
+      >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Modal Title</ModalHeader>
@@ -245,36 +280,43 @@ export default function Navbar() {
       <Modal onClose={onCreateClose} isOpen={isCreateOpen} isCentered>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Modal Title</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            Create a new prompt form
-            <FormControl>
-              <FormLabel>Title</FormLabel>
-              <Input name="title" />
-              <FormHelperText>Name your Prompt!</FormHelperText>
-              <FormLabel>Story</FormLabel>
-              <Input name="story" />
-              <FormHelperText>Write Your Prompt!</FormHelperText>
-              {/*TODO: story length (dropdown?) */}
-              <FormLabel>Story Length</FormLabel>
-              <Select placeholder="Select length">
-                <option value="option1">Short</option>
-                <option value="option2">Medium</option>
-                <option value="option3">Go nuts!</option>
-              </Select>
-              {/*TODO: deadline*/}
-              <FormLabel>Deadline</FormLabel>
-              <Input
-                placeholder="Select Date and Time"
-                size="md"
-                type="datetime-local"
-              />
-            </FormControl>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onCreateClose}>Close</Button>
-          </ModalFooter>
+          <form onSubmit={handleSubmit(onCreateSubmit)}>
+            <ModalHeader>Modal Title</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              Create a new prompt form
+              <FormControl>
+                <FormLabel>Title</FormLabel>
+                <Input id="title" {...register("title")} />
+                <FormHelperText>Name your Prompt!</FormHelperText>
+                <FormLabel>Summary</FormLabel>
+                <Input id="summary" {...register("summary")} />
+                <FormHelperText>Write Your Prompt!</FormHelperText>
+                <FormLabel>Story Length</FormLabel>
+                <Select
+                  placeholder="Select length"
+                  id="length"
+                  {...register("length")}
+                >
+                  <option value="SHORT">Short</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LONG">Long</option>
+                </Select>
+                <FormLabel>Deadline</FormLabel>
+                <Input
+                  placeholder="Select Date and Time"
+                  size="md"
+                  type="datetime-local"
+                  id="deadline"
+                  {...register("deadline")}
+                />
+              </FormControl>
+            </ModalBody>
+            <ModalFooter>
+              <Button type="submit">Submit</Button>
+              <Button onClick={onCreateClose}>Close</Button>
+            </ModalFooter>
+          </form>
         </ModalContent>
       </Modal>
     </Box>

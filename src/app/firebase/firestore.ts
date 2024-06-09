@@ -19,15 +19,65 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../firebase/firebase";
+import { Prompt } from "../utils/types";
 
 export const addStory = () => {};
-export const createPrompt = () => {};
+export async function createPrompt(prompt: Prompt) {
+  console.log(`prompt to add: ${JSON.stringify(prompt)}`);
+  try {
+    const promptRef = await addDoc(collection(db, "prompts"), prompt);
+  } catch (e) {
+    console.log("There was an error adding the document");
+    console.error("Error adding document: ", e);
+  }
+}
 export const updateStory = () => {};
 export const rateStory = () => {};
 export const ratePropt = () => {};
-export const getPrompts = () => {};
+export const getPrompts = (promptId: string) => {};
 export const getPromptStories = () => {};
-export const getUserProfile = () => {};
+
+//export async function getReviewsByRestaurantId(restaurantId: string) {
+//  if (!restaurantId) {
+//    console.log("Error: Invalid restaurantId received: ", restaurantId);
+//    return;
+//  }
+//
+//  const q = query(
+//    collection(db, "restaurants", restaurantId, "ratings"),
+//    orderBy("timestamp", "desc")
+//  );
+//
+//  const results = await getDocs(q);
+//  return results.docs.map((doc) => {
+//    return {
+//      id: doc.id,
+//      ...doc.data(),
+//      // Only plain objects can be passed to Client Components from Server Components
+//      timestamp: doc.data().timestamp.toDate(),
+//    };
+//  });
+//}
+export const getUserPrompts = async (userId: string) => {
+  //console.log(`in getUserPrompts uid: ${userId}`);
+  if (!userId) {
+    console.log("Error: Invalid userId received: ", userId);
+    return;
+  }
+  const promptsRef = collection(db, "prompts");
+
+  const q = query(promptsRef, where("userCreatorId", "==", userId));
+
+  const results = await getDocs(q);
+  //console.log(`results: ${JSON.stringify(results)}`);
+  return results.docs.map((doc) => {
+    return {
+      id: doc.id,
+      ...doc.data(),
+      // Only plain objects can be passed to Client Components from Server Components
+    };
+  });
+};
 
 //export async function updateRestaurantImageReference(
 //  restaurantId: string | undefined,

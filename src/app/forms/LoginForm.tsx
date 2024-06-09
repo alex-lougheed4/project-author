@@ -7,25 +7,23 @@ import {
 } from "@chakra-ui/react";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import { signInWithGoogle } from "../firebase/auth";
 
 type LoginType = {
   email: string;
   password: string;
 };
-import { useSignInWithEmailAndPassword } from "react-firebase-hooks/auth";
-import { auth } from "../firebase/firebase";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../firebase/AuthContextProvider";
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [signInWithEmailAndPassword] = useSignInWithEmailAndPassword(auth);
   const router = useRouter();
+  const { logIn, signInWithGoogle } = useAuth();
 
   const handleSignIn = async () => {
     try {
-      const res = await signInWithEmailAndPassword(email, password);
+      const res = await logIn(email, password);
       console.log({ res });
       sessionStorage.setItem("user", "true");
       setEmail("");

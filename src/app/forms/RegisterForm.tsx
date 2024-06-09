@@ -6,9 +6,9 @@ import {
   FormErrorMessage,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth";
 import { useForm } from "react-hook-form";
 import { auth } from "../firebase/firebase";
+import { useAuth } from "../firebase/AuthContextProvider";
 
 type RegistrationType = {
   email: string;
@@ -23,12 +23,11 @@ const RegisterForm = () => {
   } = useForm();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [createUserWithEmailAndPassword] =
-    useCreateUserWithEmailAndPassword(auth);
+  const { logIn, signInWithGoogle, signUp } = useAuth();
 
   const handleSignUp = async () => {
     try {
-      const res = await createUserWithEmailAndPassword(email, password);
+      const res = await signUp(email, password);
       console.log({ res });
       sessionStorage.setItem("user", "true");
       setEmail("");
