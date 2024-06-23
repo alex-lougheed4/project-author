@@ -1,11 +1,15 @@
 "use client";
-import { useAuth } from "@/app/firebase/AuthContextProvider";
-import { getUserPrompts } from "@/app/firebase/firestore";
+
+import { usePrompts } from "@/app/firebase/usePrompts";
+import { useUser } from "reactfire";
 
 const Page = () => {
-  const { authUser, loading } = useAuth();
+  const { data: user } = useUser();
+  const { GetPromptsByUid } = usePrompts();
 
-  const prompts = getUserPrompts(authUser.uid);
+  console.log(`inPromptsPage: ${user?.uid}`);
+  const prompts = GetPromptsByUid(user?.uid!);
+  console.log(`prompts: ${prompts}`);
   return (
     <>
       <div>Your Prompts</div>

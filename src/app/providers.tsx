@@ -2,7 +2,7 @@
 "use client";
 
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
-import { AuthContextProvider } from "./firebase/AuthContextProvider";
+import { MyFirebaseProvider } from "./firebase/firebase-providers";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const theme = extendTheme({
@@ -17,7 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   });
   return (
     <ChakraProvider theme={theme}>
-      <AuthContextProvider>{children}</AuthContextProvider>
+      <MyFirebaseProvider>{children}</MyFirebaseProvider>
     </ChakraProvider>
   );
 }

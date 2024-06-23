@@ -5,15 +5,10 @@ import {
   Input,
   FormErrorMessage,
 } from "@chakra-ui/react";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { auth } from "../firebase/firebase";
-import { useAuth } from "../firebase/AuthContextProvider";
-
-type RegistrationType = {
-  email: string;
-  password: string;
-};
+import { useAuth } from "reactfire";
 
 const RegisterForm = () => {
   const {
@@ -23,17 +18,21 @@ const RegisterForm = () => {
   } = useForm();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { logIn, signInWithGoogle, signUp } = useAuth();
+  const auth = useAuth();
 
   const handleSignUp = async () => {
     try {
-      const res = await signUp(email, password);
-      console.log({ res });
-      sessionStorage.setItem("user", "true");
-      setEmail("");
-      setPassword("");
-    } catch (e) {
-      console.error(e);
+      const user = await createUserWithEmailAndPassword(auth, email, password);
+      if (user?.user.uid && user.user.email) {
+        // create user in firestore here if you want
+        //toast({ title: "Account created!" });
+      }
+    } catch (err: any) {
+      if ("code" in err && err.code.includes("already")) {
+        //toast({ title: "User already exists" });
+      } else {
+        //toast({ title: "Error signing up", description: `${err}` });
+      }
     }
   };
   return (

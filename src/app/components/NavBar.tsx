@@ -50,10 +50,11 @@ import { PenIcon } from "../assets/PenIcon";
 import LoginForm from "../forms/LoginForm";
 import RegisterForm from "../forms/RegisterForm";
 import { useForm } from "react-hook-form";
-import { createPrompt, getUserPrompts } from "../firebase/firestore";
 import { Prompt } from "../utils/types";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../firebase/AuthContextProvider";
+import { useUser } from "reactfire";
+import { getAuth, signOut } from "firebase/auth";
+import { usePrompts } from "../firebase/usePrompts";
 
 type Inputs = {
   email: string;
@@ -64,8 +65,8 @@ export default function Navbar() {
   const router = useRouter();
   const { isOpen, onToggle } = useDisclosure();
   const { colorMode, toggleColorMode } = useColorMode();
-  const { authUser, loading, signOut } = useAuth();
-  const isLoggedIn: boolean = false;
+  const { data: user } = useUser();
+  const { CreatePrompt } = usePrompts();
   const {
     isOpen: isCreateOpen,
     onOpen: onCreateOpen,
@@ -88,24 +89,30 @@ export default function Navbar() {
     formState: { errors, isSubmitting },
   } = useForm();
 
-  function onCreateSubmit(values: any) {
-    console.log(`values: ${values}`);
+  const onCreateSubmit = async (values: any) => {
     const prompt: Prompt = {
       title: values.title,
       summary: values.summary,
-      userCreatorId: authUser?.uid,
+      userCreatorId: user?.uid,
       createdAt: new Date(),
       deadline: values.deadline,
       length: values.length,
       kudos: 0,
     };
     console.log(`createPrompt: ${JSON.stringify(prompt)}`);
-    return new Promise((resolve) => {
-      createPrompt(prompt);
-    });
-    console.log(`user: ${authUser}`);
-  }
+    CreatePrompt(prompt);
+  };
 
+  const onLogout = async () => {
+    console.log("logout");
+    await signOut(getAuth());
+    //toast({
+    //  title: "Logged out",
+    //  description: "You have been logged out.",
+    //});
+    router.replace("/");
+  };
+  console.log(`userId: ${user?.uid}`);
   return (
     <Box>
       <Flex
@@ -175,7 +182,7 @@ export default function Navbar() {
           <Button onClick={toggleColorMode}>
             {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
           </Button>
-          {authUser.uid ? (
+          {user?.uid ? (
             <>
               <Menu>
                 <MenuButton
@@ -200,7 +207,7 @@ export default function Navbar() {
                   </Center>
                   <br />
                   <Center>
-                    <p>{authUser?.displayName}</p>
+                    <p>{user?.displayName}</p>
                   </Center>
                   <br />
                   <MenuDivider />
@@ -209,7 +216,7 @@ export default function Navbar() {
                   </MenuItem>
                   <MenuItem>Your Stories</MenuItem>
                   <MenuItem>Settings</MenuItem>
-                  <MenuItem onClick={() => signOut()}>Logout</MenuItem>
+                  <MenuItem onClick={() => onLogout()}>Logout</MenuItem>
                 </MenuList>
               </Menu>
 
@@ -246,11 +253,7 @@ export default function Navbar() {
           )}
         </Stack>
       </Flex>
-      <Modal
-        onClose={onLoginClose}
-        isOpen={isLoginOpen && !authUser}
-        isCentered
-      >
+      <Modal onClose={onLoginClose} isOpen={isLoginOpen && !user} isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Modal Title</ModalHeader>
@@ -281,17 +284,16 @@ export default function Navbar() {
         <ModalOverlay />
         <ModalContent>
           <form onSubmit={handleSubmit(onCreateSubmit)}>
-            <ModalHeader>Modal Title</ModalHeader>
+            <ModalHeader>Create Prompt</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-              Create a new prompt form
               <FormControl>
+                <FormHelperText>Name your Prompt!</FormHelperText>
                 <FormLabel>Title</FormLabel>
                 <Input id="title" {...register("title")} />
-                <FormHelperText>Name your Prompt!</FormHelperText>
+                <FormHelperText>Write Your Prompt!</FormHelperText>
                 <FormLabel>Summary</FormLabel>
                 <Input id="summary" {...register("summary")} />
-                <FormHelperText>Write Your Prompt!</FormHelperText>
                 <FormLabel>Story Length</FormLabel>
                 <Select
                   placeholder="Select length"
