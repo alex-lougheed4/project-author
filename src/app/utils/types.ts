@@ -1,4 +1,4 @@
-enum promptLength {
+export enum PromptLength {
   SHORT,
   MEDIUM,
   LONG,
@@ -12,7 +12,7 @@ export type Prompt = {
   stories?: string[] | undefined;
   createdAt: Date;
   deadline: Date;
-  length: promptLength;
+  length: PromptLength;
   kudos?: number | undefined;
 };
 

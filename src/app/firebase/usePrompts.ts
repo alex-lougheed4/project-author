@@ -13,6 +13,7 @@ import {
   useFirestoreDocData,
 } from "reactfire";
 import { Prompt } from "../utils/types";
+import { useCallback, useState } from "react";
 
 export const usePrompts = () => {
   const GetPrompts = () => {
@@ -52,8 +53,6 @@ export const usePrompts = () => {
 
   const CreatePrompt = async (prompt: Prompt) => {
     const promptsRef = collection(useFirestore(), "prompts");
-    //addDoc(promptsRef, prompt);
-
     try {
       const docRef = await addDoc(promptsRef, {
         prompt: prompt,
