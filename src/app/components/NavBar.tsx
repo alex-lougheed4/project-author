@@ -52,9 +52,9 @@ import RegisterForm from "../forms/RegisterForm";
 import { useForm } from "react-hook-form";
 import { Prompt } from "../utils/types";
 import { useRouter } from "next/navigation";
-import { useUser } from "reactfire";
+import { useFirestore, useUser } from "reactfire";
 import { getAuth, signOut } from "firebase/auth";
-import { usePrompts } from "../firebase/usePrompts";
+import { addDoc, collection } from "firebase/firestore";
 
 type Inputs = {
   email: string;
@@ -62,11 +62,12 @@ type Inputs = {
 };
 
 export default function Navbar() {
+  const firestore = useFirestore();
+  const promptsRef = collection(firestore, "prompts"); //needs to be top level
   const router = useRouter();
   const { isOpen, onToggle } = useDisclosure();
   const { colorMode, toggleColorMode } = useColorMode();
   const { data: user } = useUser();
-  const { CreatePrompt } = usePrompts();
   const {
     isOpen: isCreateOpen,
     onOpen: onCreateOpen,
@@ -100,7 +101,20 @@ export default function Navbar() {
       kudos: 0,
     };
     console.log(`createPrompt: ${JSON.stringify(prompt)}`);
-    CreatePrompt(prompt);
+    try {
+      const docRef = await addDoc(promptsRef, {
+        title: values.title,
+        summary: values.summary,
+        userCreatorId: user?.uid,
+        createdAt: new Date(),
+        deadline: values.deadline,
+        length: values.length,
+        kudos: 0,
+      });
+      console.log("Document written with ID: ", docRef.id);
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
   };
 
   const onLogout = async () => {
