@@ -25,7 +25,6 @@ import {
   Divider,
   Drawer,
   Button,
-  Slide,
   Dialog,
   DialogTitle,
   DialogContentText,
@@ -33,7 +32,6 @@ import {
   DialogActions,
   TextField,
 } from '@mui/material';
-import { TransitionProps } from '@mui/material/transitions';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -253,6 +251,7 @@ export default function PrimarySearchAppBar() {
                 onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
                   event.preventDefault();
                   const formData = new FormData(event.currentTarget);
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const formJson = Object.fromEntries((formData as any).entries());
                   const email = formJson.email;
                   console.log(email);
@@ -276,7 +275,6 @@ export default function PrimarySearchAppBar() {
                   fullWidth
                   variant="standard"
                 />
-                <DatePicker label="Basic date picker" />
               </DialogContent>
               <DialogActions>
                 <Button onClick={handleClose}>Cancel</Button>
