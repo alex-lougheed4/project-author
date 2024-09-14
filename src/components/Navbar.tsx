@@ -22,7 +22,6 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Divider,
   Drawer,
   Button,
   Dialog,
@@ -32,6 +31,9 @@ import {
   DialogActions,
   TextField,
 } from '@mui/material';
+import { useAuth0 } from '@auth0/auth0-react';
+import LoginButton from './LoginButton';
+import LogoutButton from './LogoutButton';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -74,6 +76,8 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 export default function PrimarySearchAppBar() {
+  const { isAuthenticated } = useAuth0();
+
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = React.useState<null | HTMLElement>(null);
   const [open, setOpen] = React.useState(false);
@@ -114,18 +118,7 @@ export default function PrimarySearchAppBar() {
   const DrawerList = (
     <Box sx={{ width: 250 }} role="presentation" onClick={toggleDrawer(false)}>
       <List>
-        {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <MailIcon />}</ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-      <Divider />
-      <List>
-        {['All mail', 'Trash', 'Spam'].map((text, index) => (
+        {['Explore', 'About'].map((text, index) => (
           <ListItem key={text} disablePadding>
             <ListItemButton>
               <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <MailIcon />}</ListItemIcon>
@@ -157,7 +150,7 @@ export default function PrimarySearchAppBar() {
       <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
       <MenuItem onClick={handleMenuClose}>My Prompts</MenuItem>
       <MenuItem onClick={handleMenuClose}>My Stories</MenuItem>
-      <MenuItem onClick={handleMenuClose}>Log out</MenuItem>
+      <LogoutButton />
     </Menu>
   );
 
@@ -208,7 +201,6 @@ export default function PrimarySearchAppBar() {
       </MenuItem>
     </Menu>
   );
-  console.log(createOpen);
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="fixed">
@@ -229,59 +221,63 @@ export default function PrimarySearchAppBar() {
           <Typography variant="h6" noWrap component="div" sx={{ display: { xs: 'none', sm: 'block' } }}>
             Promptr
           </Typography>
-          <React.Fragment>
-            <Button>
-              <Typography
-                variant="h6"
-                color="white"
-                noWrap
-                component="div"
-                sx={{ display: { xs: 'none', sm: 'block' } }}
-                onClick={handleClickOpen}
-              >
-                Create
-              </Typography>
-            </Button>
 
-            <Dialog
-              open={createOpen}
-              onClose={handleClose}
-              PaperProps={{
-                component: 'form',
-                onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
-                  event.preventDefault();
-                  const formData = new FormData(event.currentTarget);
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const formJson = Object.fromEntries((formData as any).entries());
-                  const email = formJson.email;
-                  console.log(email);
-                  handleClose();
-                },
-              }}
-            >
-              <DialogTitle>Create a Prompt</DialogTitle>
-              <DialogContent>
-                <DialogContentText>
-                  To subscribe to this website, please enter your email address here. We will send updates occasionally.
-                </DialogContentText>
-                <TextField
-                  autoFocus
-                  required
-                  margin="dense"
-                  id="name"
-                  name="email"
-                  label="Email Address"
-                  type="email"
-                  fullWidth
-                  variant="standard"
-                />
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleClose}>Cancel</Button>
-                <Button type="submit">Subscribe</Button>
-              </DialogActions>
-            </Dialog>
-          </React.Fragment>
+          {isAuthenticated ? (
+            <React.Fragment>
+              <Button>
+                <Typography
+                  variant="h6"
+                  color="white"
+                  noWrap
+                  component="div"
+                  sx={{ display: { xs: 'none', sm: 'block' } }}
+                  onClick={handleClickOpen}
+                >
+                  Create
+                </Typography>
+              </Button>
+
+              <Dialog
+                open={createOpen}
+                onClose={handleClose}
+                PaperProps={{
+                  component: 'form',
+                  onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
+                    event.preventDefault();
+                    const formData = new FormData(event.currentTarget);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const formJson = Object.fromEntries((formData as any).entries());
+                    const email = formJson.email;
+                    console.log(email);
+                    handleClose();
+                  },
+                }}
+              >
+                <DialogTitle>Create a Prompt</DialogTitle>
+                <DialogContent>
+                  <DialogContentText>
+                    To subscribe to this website, please enter your email address here. We will send updates
+                    occasionally.
+                  </DialogContentText>
+                  <TextField
+                    autoFocus
+                    required
+                    margin="dense"
+                    id="name"
+                    name="email"
+                    label="Email Address"
+                    type="email"
+                    fullWidth
+                    variant="standard"
+                  />
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={handleClose}>Cancel</Button>
+                  <Button type="submit">Subscribe</Button>
+                </DialogActions>
+              </Dialog>
+            </React.Fragment>
+          ) : null}
 
           <Search>
             <SearchIconWrapper>
@@ -290,29 +286,25 @@ export default function PrimarySearchAppBar() {
             <StyledInputBase placeholder="Search…" inputProps={{ 'aria-label': 'search' }} />
           </Search>
           <Box sx={{ flexGrow: 1 }} />
-          <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-            <IconButton size="large" aria-label="show 4 new mails" color="inherit">
-              <Badge badgeContent={4} color="error">
-                <MailIcon />
-              </Badge>
-            </IconButton>
-            <IconButton size="large" aria-label="show 17 new notifications" color="inherit">
-              <Badge badgeContent={17} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-            <IconButton
-              size="large"
-              edge="end"
-              aria-label="account of current user"
-              aria-controls={menuId}
-              aria-haspopup="true"
-              onClick={handleProfileMenuOpen}
-              color="inherit"
-            >
-              <AccountCircle />
-            </IconButton>
-          </Box>
+          {isAuthenticated ? (
+            <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+              <IconButton
+                size="large"
+                edge="end"
+                aria-label="account of current user"
+                aria-controls={menuId}
+                aria-haspopup="true"
+                onClick={handleProfileMenuOpen}
+                color="inherit"
+              >
+                <AccountCircle />
+              </IconButton>
+            </Box>
+          ) : (
+            <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+              <LoginButton />
+            </Box>
+          )}
           <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
             <IconButton
               size="large"
