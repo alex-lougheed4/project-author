@@ -4,13 +4,22 @@ import './index.css';
 import Homepage from './Homepage.tsx';
 import { createRoot } from 'react-dom/client';
 import { Auth0Provider } from '@auth0/auth0-react';
+import About from './About.tsx';
+import Explore from './Explore.tsx';
+import ErrorPage from './ErrorPage.tsx';
+import PromptDetailedCard from './components/PromptDetailedCard.tsx';
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <Homepage />,
+    errorElement: <ErrorPage />,
   },
+  { path: '/About', element: <About /> },
+  { path: '/Explore', element: <Explore /> },
+  { path: 'prompt/:promptId', element: <PromptDetailedCard /> },
 ]);
+console.log(`hehe: ${import.meta.env.VITE_AUTH_KEY}`);
 
 const deferRender = async () => {
   const { worker } = await import('./mocks/browser.ts');
@@ -22,7 +31,7 @@ deferRender().then(() => {
     <StrictMode>
       <Auth0Provider
         domain="project-author.uk.auth0.com"
-        clientId="lmSsemCB4uGHAz7mR5k9E49dU5MRaGid"
+        clientId={import.meta.env.VITE_AUTH_KEY}
         authorizationParams={{ redirect_uri: window.location.origin }}
       >
         <RouterProvider router={router} />

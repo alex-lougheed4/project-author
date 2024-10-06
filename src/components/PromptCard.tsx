@@ -6,18 +6,25 @@ export type PromptCardProps = {
   prompt: Prompt;
 };
 
+//const PromptCard = ({ prompt }: PromptCardProps) => {
 const PromptCard = ({ prompt }: PromptCardProps) => {
+  const { promptTitle, stories, creatorId, deadline, length } = prompt; 
+
+  const handleClick = () => {
+    
+  };
+
   console.log(`inCard promptData: ${JSON.stringify(prompt)}`);
   return (
     <>
-      <Card variant="outlined">
-        <Typography variant="h3">{prompt.prompt}</Typography>
+      <Card onClick={handleClick} variant="outlined">
+        <Typography variant="h3">{promptTitle}</Typography>
         {/** Display only the top x story? */}
-        {prompt.stories ? prompt.stories.map((story) => <StoryCard story={story} />) : null}
+        {stories ? stories.map((story) => <StoryCard story={story} />) : null}
         <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Typography variant="body1">Promptr: {prompt.creatorId}</Typography>
-          <Typography variant="body1">Deadline: {prompt.deadline.toLocaleString()}</Typography>
-          <Typography variant="body1">Story Length:{prompt.length}</Typography>
+          <Typography variant="body1">Promptr: {creatorId}</Typography>
+          <Typography variant="body1">Deadline: {deadline}</Typography>
+          <Typography variant="body1">Story Length:{length}</Typography>
         </Box>
       </Card>
     </>
