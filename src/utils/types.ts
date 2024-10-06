@@ -10,7 +10,7 @@ export type Story = {
 
 export type Prompt = {
     id: string;
-    promptTitle: string;
+    prompt: string;
     creatorId: string;
     stories: Story[];
     createdAt: Date;

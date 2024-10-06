@@ -17,14 +17,9 @@ const Homepage = () => {
   return (
     <>
       <Navbar />
-      <p>{promptData ? JSON.stringify(promptData) : 'Loading...'}</p>
-      {promptData ? (
+      {promptData ? ( //only show one prompt and swipe to another or click arrow to the right
         promptData.map((prompt: Prompt) => {
-          console.log(prompt.id);
-          <PromptCard {...prompt} />;
-          {
-            /** not rendering */
-          }
+          return <PromptCard key={prompt.id} prompt={prompt} />;
         })
       ) : (
         <p>Loading...</p>
