@@ -19,7 +19,6 @@ const router = createBrowserRouter([
   { path: '/Explore', element: <Explore /> },
   { path: 'prompt/:promptId', element: <PromptDetailedCard /> },
 ]);
-console.log(`hehe: ${import.meta.env.VITE_AUTH_KEY}`);
 
 const deferRender = async () => {
   const { worker } = await import('./mocks/browser.ts');
@@ -31,7 +30,7 @@ deferRender().then(() => {
     <StrictMode>
       <Auth0Provider
         domain="project-author.uk.auth0.com"
-        clientId={import.meta.env.VITE_AUTH_KEY}
+        clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
         authorizationParams={{ redirect_uri: window.location.origin }}
       >
         <RouterProvider router={router} />
