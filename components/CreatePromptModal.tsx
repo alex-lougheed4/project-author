@@ -1,25 +1,20 @@
 "use client";
-import { createClient } from "@/utils/supabase/client";
-import { Prompt } from "@/utils/types";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 type CreatePromptModalProps = {
-  onSubmit: (data: Omit<Prompt, "id" | "authorId" | "stories">) => void;
+  onSubmit: (formData: FormData) => void;
 };
 
 export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
   onSubmit,
 }) => {
   const router = useRouter();
-  const supabase = createClient();
   const [formData, setFormData] = useState({
-    promptTitle: "",
-    promptSummary: "",
-    deadline: "",
+    title: "",
+    summary: "",
+    deadlineDate: "",
     length: "",
-    writerCreds: 0,
-    createdAt: new Date().toISOString(), // Add createdAt field
   });
 
   const handleChange = (
@@ -30,106 +25,75 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "writerCreds" ? Number(value) : value,
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      // Get the current user's session
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
 
-      if (!session?.user?.id) {
-        throw new Error("User must be logged in to create a prompt");
-      }
+    // Create FormData object
+    const form = new FormData();
+    form.append("title", formData.title);
+    form.append("summary", formData.summary);
+    form.append("deadlineDate", formData.deadlineDate);
+    form.append("length", formData.length);
 
-      // Insert the prompt into Supabase
-      const { data, error } = await supabase
-        .from("prompts")
-        .insert([
-          {
-            created_at: formData.createdAt,
-            prompt_title: formData.promptTitle,
-            prompt_summary: formData.promptSummary,
-            author_id: session.user.id,
-            deadline: formData.deadline,
-            length: formData.length,
-            writer_cred: formData.writerCreds,
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Call the onSubmit prop with the created prompt
-      onSubmit(formData);
-    } catch (error) {
-      console.error("Error creating prompt:", error);
-      if (error && typeof error === "object" && "code" in error) {
-        const dbError = error as {
-          code: string;
-          message: string;
-          details: string;
-        };
-        console.error("Supabase error code:", dbError.code);
-        console.error("Supabase error message:", dbError.message);
-        console.error("Supabase error details:", dbError.details);
-      }
-      alert("Failed to create prompt. Please try again.");
-    }
+    // Call the onSubmit prop with FormData
+    onSubmit(form);
   };
 
   return (
-    <div className="flex flex-col bg-slate-900 items-center justify-center gap-8 p-4 rounded-3xl">
-      <h2 className="text-4xl">Create New Prompt</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-        <div className="flex flex-row justify-between">
-          <label className="text-2xl" htmlFor="promptTitle">
+    <div className="flex flex-col bg-slate-900 items-center justify-center gap-8 p-6 rounded-3xl max-w-2xl mx-auto">
+      <h2 className="text-4xl text-white">Create New Prompt</h2>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
+        <div className="flex flex-col gap-2">
+          <label className="text-xl text-white" htmlFor="title">
             Prompt Title
           </label>
           <input
             type="text"
-            id="promptTitle"
-            name="promptTitle"
-            value={formData.promptTitle}
+            id="title"
+            name="title"
+            value={formData.title}
             onChange={handleChange}
             required
+            className="p-2 rounded bg-gray-800 text-white border border-gray-600"
           />
         </div>
-        <div className="flex flex-row justify-between">
-          <label className="text-2xl" htmlFor="promptSummary">
+
+        <div className="flex flex-col gap-2">
+          <label className="text-xl text-white" htmlFor="summary">
             Prompt Summary
           </label>
           <textarea
-            id="promptSummary"
-            name="promptSummary"
-            value={formData.promptSummary}
+            id="summary"
+            name="summary"
+            value={formData.summary}
             onChange={handleChange}
             required
+            rows={4}
+            className="p-2 rounded bg-gray-800 text-white border border-gray-600"
           />
         </div>
-        <div className="flex flex-row justify-between">
-          <label className="text-2xl" htmlFor="deadline">
-            Deadline
+
+        <div className="flex flex-col gap-2">
+          <label className="text-xl text-white" htmlFor="deadlineDate">
+            Deadline (Optional)
           </label>
           <input
             type="date"
-            id="deadline"
-            name="deadline"
-            value={formData.deadline}
+            id="deadlineDate"
+            name="deadlineDate"
+            value={formData.deadlineDate}
             onChange={handleChange}
-            required
+            className="p-2 rounded bg-gray-800 text-white border border-gray-600"
           />
         </div>
-        <div className="flex flex-row justify-between">
-          <label className="text-2xl" htmlFor="length">
-            Length
+
+        <div className="flex flex-col gap-2">
+          <label className="text-xl text-white" htmlFor="length">
+            Target Word Count
           </label>
           <select
             id="length"
@@ -137,25 +101,32 @@ export const CreatePromptModal: React.FC<CreatePromptModalProps> = ({
             value={formData.length}
             onChange={handleChange}
             required
-            className="p-1 rounded text-white"
+            className="p-2 rounded bg-gray-800 text-white border border-gray-600"
           >
-            <option value="">Select length</option>
-            <option value="short">Short (500-1000 words)</option>
-            <option value="medium">Medium (1000-2500 words)</option>
-            <option value="long">Long (2500+ words)</option>
+            <option value="">Select word count</option>
+            <option value="500">500 words</option>
+            <option value="1000">1,000 words</option>
+            <option value="1500">1,500 words</option>
+            <option value="2000">2,000 words</option>
+            <option value="2500">2,500 words</option>
+            <option value="3000">3,000 words</option>
+            <option value="5000">5,000 words</option>
           </select>
         </div>
 
-        <div className="flex flex-row items-center justify-center form-actions gap-10">
+        <div className="flex items-center justify-center gap-4 mt-6">
           <button
-            className="bg-violet-900 p-2 rounded-2xl"
+            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors"
             type="button"
-            onClick={() => console.log("Cancel")}
+            onClick={() => router.back()}
           >
             Cancel
           </button>
-          <button className="bg-violet-900 p-2 rounded-2xl" type="submit">
-            Submit
+          <button
+            className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-lg transition-colors"
+            type="submit"
+          >
+            Create Prompt
           </button>
         </div>
       </form>

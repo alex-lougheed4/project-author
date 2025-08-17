@@ -1,44 +1,48 @@
 import { PromptCard } from "@/components/PromptCard";
 import { createClient } from "@/utils/supabase/server";
-
-// Import Swiper React components
-
-// Import Swiper styles
-import "swiper/css";
+import { PromptWithMetadata } from "@/utils/types";
 
 export default async function Home() {
   const supabase = await createClient();
 
-  const { data: promptData, error } = await supabase.from("prompts").select();
-  console.log("Prompt Data", JSON.stringify(promptData));
+  // Fetch prompts with metadata using the view we created
+  const { data: prompts, error } = await supabase
+    .from("prompts_with_metadata")
+    .select(
+      `
+      *,
+      author:profiles!prompts_author_id_fkey(username, full_name)
+    `
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching prompts:", error);
+    return (
+      <div className="text-center text-red-500 p-8">
+        Error loading prompts. Please try again later.
+      </div>
+    );
+  }
+
   return (
-    <>
-      {promptData?.map((prompt) => (
-        <PromptCard
-          key={prompt.id}
-          id={prompt.id}
-          createdAt={prompt.created_at}
-          promptTitle={prompt.prompt_title}
-          promptSummary={prompt.prompt_summary}
-          authorId={prompt.author_id}
-          deadline={prompt.deadline}
-          length={prompt.length}
-          writerCreds={prompt.writer_cred}
-          stories={[]}
-        />
-      ))}
-      <PromptCard
-        id="1"
-        createdAt={new Date().toISOString()}
-        promptTitle="Sample Prompt"
-        promptSummary="This is a sample prompt summary."
-        authorId="Author Name"
-        deadline="
-          2023-10-01T00:00:00Z"
-        length="Short"
-        writerCreds={10}
-        stories={[]}
-      />
-    </>
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-white mb-8 text-center">
+        Writing Prompts
+      </h1>
+
+      {prompts && prompts.length > 0 ? (
+        <div className="space-y-6">
+          {prompts.map((prompt) => (
+            <PromptCard key={prompt.id} {...prompt} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center text-gray-400 p-8">
+          <p className="text-xl mb-2">No prompts yet</p>
+          <p>Be the first to create a writing prompt!</p>
+        </div>
+      )}
+    </div>
   );
 }

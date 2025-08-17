@@ -127,8 +127,8 @@ CREATE VIEW prompts_with_metadata AS
 SELECT 
   p.*,
   COUNT(s.id) as story_count,
-  get_prompt_votes(p.id).upvotes as upvotes,
-  get_prompt_votes(p.id).downvotes as downvotes
+  (SELECT upvotes FROM get_prompt_votes(p.id)) as upvotes,
+  (SELECT downvotes FROM get_prompt_votes(p.id)) as downvotes
 FROM prompts p
 LEFT JOIN stories s ON p.id = s.prompt_id
 GROUP BY p.id;

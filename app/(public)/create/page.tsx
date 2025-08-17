@@ -1,41 +1,32 @@
 "use client";
 import { CreatePromptModal } from "@/components/CreatePromptModal";
-import { createClient } from "@/utils/supabase/client"; // Make sure this is the client version
+import { createPromptAction } from "@/app/actions";
 import { useState } from "react";
 
 export default function Create() {
   const [error, setError] = useState<string | null>(null);
 
-  const handleCreatePrompt = async (formData: any) => {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const { error } = await supabase.from("prompts").insert({
-      created_at: new Date().toISOString(),
-      prompt_title: formData.promptTitle,
-      prompt_summary: formData.promptSummary,
-      author_id: user?.id ?? null,
-      deadline: formData.deadline,
-      length: formData.length,
-      writer_cred: formData.writerCreds,
-    });
-
-    if (error) setError(error.message);
-    else setError(null);
-
-    //add a trigger when a new prompt is created to add the prompt to the user's prompts
+  const handleCreatePrompt = async (formData: FormData) => {
+    try {
+      await createPromptAction(formData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create prompt");
+    }
   };
 
   return (
-    <>
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-white mb-8 text-center">
+        Create a Writing Prompt
+      </h1>
+
       <CreatePromptModal onSubmit={handleCreatePrompt} />
+
       {error && (
-        <div className="bg-red-500 text-white p-4 rounded-md">
+        <div className="bg-red-500 text-white p-4 rounded-md mt-4">
           <p>Error: {error}</p>
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -3,7 +3,16 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "supabase:local": "./scripts/supabase-setup.sh local",
+    "supabase:prod": "./scripts/supabase-setup.sh production",
+    "supabase:status": "./scripts/supabase-setup.sh status",
+    "supabase:reset": "./scripts/supabase-setup.sh reset",
+    "supabase:reset:seed": "./scripts/supabase-setup.sh reset --seed",
+    "supabase:deploy": "./scripts/supabase-setup.sh deploy",
+    "db:local": "npm run supabase:local && npm run supabase:reset:seed",
+    "db:prod": "npm run supabase:prod",
+    "db:deploy": "npm run supabase:deploy"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

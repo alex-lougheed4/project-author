@@ -93,6 +93,181 @@ If you wish to just develop locally and not deploy to Vercel, [follow the steps 
 
 > Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
 
+## Environment Setup
+
+This project is configured to work with both local and remote Supabase instances. You can easily switch between environments for development and production.
+
+### Environment Configuration
+
+The project uses environment-specific configuration files:
+
+- **`env.local.example`** → Copy to `.env.local` for local development
+- **`env.production.example`** → Copy to `.env.production` for production
+
+### Quick Start Commands
+
+```bash
+# Setup local development environment
+npm run db:local
+
+# Link to production environment  
+npm run db:prod YOUR_PROJECT_REF
+
+# Deploy to production
+npm run db:deploy
+
+# Check current status
+npm run supabase:status
+```
+
+### Manual Setup
+
+If you prefer manual setup, use the provided script:
+
+```bash
+# Make script executable (first time only)
+chmod +x scripts/supabase-setup.sh
+
+# Setup local environment
+./scripts/supabase-setup.sh local
+
+# Link to production
+./scripts/supabase-setup.sh production YOUR_PROJECT_REF
+
+# Reset local database with seed data
+./scripts/supabase-setup.sh reset --seed
+
+# Deploy to production
+./scripts/supabase-setup.sh deploy
+```
+
+### Prerequisites
+
+1. **Install Supabase CLI**
+   ```bash
+   # Using Homebrew (macOS)
+   brew install supabase/tap/supabase
+   
+   # Or download binary directly
+   curl -fsSL https://supabase.com/install.sh | sh
+   ```
+
+2. **Install Docker** (required for local Supabase)
+   - [Docker Desktop](https://www.docker.com/products/docker-desktop/) for macOS/Windows
+   - [Docker Engine](https://docs.docker.com/engine/install/) for Linux
+
+### Local Development Workflow
+
+#### 1. Start Local Supabase Instance
+```bash
+# Start local Supabase (creates local database, API, and Studio)
+supabase start
+
+# This will output your local environment variables:
+# API URL: http://localhost:54321
+# DB URL: postgresql://postgres:postgres@localhost:54322/postgres
+# Studio URL: http://localhost:54323
+# Inbucket URL: http://localhost:54324
+```
+
+#### 2. Apply Database Migrations
+```bash
+# Apply all migrations to local database
+supabase db reset
+
+# Or apply specific migrations
+supabase migration up
+```
+
+#### 3. Seed the Database (Optional)
+```bash
+# Apply migrations and seed data
+supabase db reset --seed
+
+# Or seed manually after migrations
+supabase db reset
+psql postgresql://postgres:postgres@localhost:54322/postgres -f supabase/seed.sql
+```
+
+#### 3. Set Environment Variables for Local Development
+Create `.env.local` with your local Supabase credentials:
+```bash
+# Local development environment
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+```
+
+#### 4. Start Your Next.js App
+```bash
+npm run dev
+# or
+pnpm dev
+# or
+yarn dev
+```
+
+#### 5. Access Local Tools
+- **Supabase Studio**: http://localhost:54323 (database management)
+- **API**: http://localhost:54321
+- **Database**: localhost:54322
+- **Email Testing**: http://localhost:54324
+
+### Working with Sample Data
+
+The local database is completely isolated from production, so you can:
+- Add test users and data
+- Experiment with schema changes
+- Test features without affecting production
+- Reset the database anytime with `supabase db reset`
+
+#### Sample Data Included
+
+The seed file (`supabase/seed.sql`) includes:
+- **5 sample profiles** with different writing styles and backgrounds
+- **8 creative writing prompts** covering various genres (sci-fi, mystery, fantasy, etc.)
+- **5 sample stories** written in response to prompts
+- **33 sample votes** to demonstrate the voting system
+- **Realistic content** with proper word counts, deadlines, and metadata
+
+Sample prompts include:
+- "The Last Library on Earth" (post-apocalyptic)
+- "Time Traveler's Dilemma" (sci-fi)
+- "The Restaurant at the End of the Universe" (fantasy)
+- "The Garden of Forgotten Dreams" (magical realism)
+- And more!
+
+### Database Schema
+
+This project includes a comprehensive database schema for a writing platform:
+
+- **`profiles`**: User profiles extending Supabase auth
+- **`prompts`**: Writing prompts with deadlines and word limits
+- **`stories`**: Stories written in response to prompts
+- **`votes`**: Upvote/downvote system for content
+- **Row Level Security**: Secure data access policies
+- **Helper Functions**: Vote counting and metadata views
+- **Triggers**: Automatic profile creation on signup
+
+### Switching Between Local and Production
+
+```bash
+# Work with local database
+supabase start
+supabase db reset
+
+# When ready to deploy to production
+supabase stop                    # Stop local instance
+supabase link --project-ref YOUR_PROJECT_REF
+supabase db push                 # Push migrations to production
+```
+
+### Troubleshooting
+
+- **Port conflicts**: If ports are in use, Supabase will show alternative ports
+- **Database reset**: Use `supabase db reset` to start fresh
+- **Migration issues**: Check `supabase migration list` for status
+- **Docker issues**: Ensure Docker is running before `supabase start`
+
 ## Feedback and issues
 
 Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).

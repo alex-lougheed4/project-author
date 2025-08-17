@@ -5,17 +5,155 @@ import { encodedRedirect } from "@/utils/utils";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+export const createPromptAction = async (formData: FormData) => {
+  const supabase = await createClient();
+
+  // Get current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return encodedRedirect("error", "/create", "You must be signed in to create a prompt");
+  }
+
+  const title = formData.get("title")?.toString();
+  const summary = formData.get("summary")?.toString();
+  const length = parseInt(formData.get("length")?.toString() || "0");
+  const deadlineDate = formData.get("deadlineDate")?.toString();
+
+  if (!title || !summary || !length) {
+    return encodedRedirect("error", "/create", "Title, summary, and length are required");
+  }
+
+  if (length <= 0) {
+    return encodedRedirect("error", "/create", "Length must be greater than 0");
+  }
+
+  const { error } = await supabase
+    .from('prompts')
+    .insert({
+      title,
+      summary,
+      author_id: user.id,
+      length,
+      deadline_date: deadlineDate || null,
+    });
+
+  if (error) {
+    console.error("Error creating prompt:", error);
+    return encodedRedirect("error", "/create", "Failed to create prompt");
+  }
+
+  return redirect("/home");
+};
+
+export const createStoryAction = async (formData: FormData) => {
+  const supabase = await createClient();
+
+  // Get current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return encodedRedirect("error", "/prompts/[id]", "You must be signed in to create a story");
+  }
+
+  const promptId = formData.get("promptId")?.toString();
+  const storyTitle = formData.get("storyTitle")?.toString();
+  const storyDescription = formData.get("storyDescription")?.toString();
+
+  if (!promptId || !storyTitle || !storyDescription) {
+    return encodedRedirect("error", "/prompts/[id]", "All fields are required");
+  }
+
+  // Calculate word count
+  const wordCount = storyDescription.trim().split(/\s+/).length;
+
+  const { error } = await supabase
+    .from('stories')
+    .insert({
+      story_title: storyTitle,
+      prompt_id: promptId,
+      author_id: user.id,
+      story_description: storyDescription,
+      word_count: wordCount,
+    });
+
+  if (error) {
+    console.error("Error creating story:", error);
+    return encodedRedirect("error", "/prompts/[id]", "Failed to create story");
+  }
+
+  return redirect(`/prompts/${promptId}`);
+};
+
+export const voteAction = async (formData: FormData) => {
+  const supabase = await createClient();
+
+  // Get current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return encodedRedirect("error", "/home", "You must be signed in to vote");
+  }
+
+  const promptId = formData.get("promptId")?.toString();
+  const storyId = formData.get("storyId")?.toString();
+  const voteType = formData.get("voteType")?.toString() as 'upvote' | 'downvote';
+
+  if (!voteType || (!promptId && !storyId)) {
+    return encodedRedirect("error", "/home", "Invalid vote data");
+  }
+
+  // Check if user already voted
+  const { data: existingVote } = await supabase
+    .from('votes')
+    .select()
+    .eq('user_id', user.id)
+    .eq(promptId ? 'prompt_id' : 'story_id', promptId || storyId)
+    .single();
+
+  if (existingVote) {
+    // Update existing vote
+    const { error } = await supabase
+      .from('votes')
+      .update({ vote_type: voteType })
+      .eq('id', existingVote.id);
+
+    if (error) {
+      console.error("Error updating vote:", error);
+      return encodedRedirect("error", "/home", "Failed to update vote");
+    }
+  } else {
+    // Create new vote
+    const { error } = await supabase
+      .from('votes')
+      .insert({
+        user_id: user.id,
+        prompt_id: promptId || null,
+        story_id: storyId || null,
+        vote_type: voteType,
+      });
+
+    if (error) {
+      console.error("Error creating vote:", error);
+      return encodedRedirect("error", "/home", "Failed to create vote");
+    }
+  }
+
+  // Redirect back to the same page
+  return redirect(promptId ? `/prompts/${promptId}` : '/home');
+};
+
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
+  const username = formData.get("username")?.toString();
+  const fullName = formData.get("fullName")?.toString();
+
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
 
-  if (!email || !password) {
+  if (!email || !password || !username) {
     return encodedRedirect(
       "error",
       "/sign-up",
-      "Email and password are required"
+      "Email, password, and username are required"
     );
   }
 
@@ -24,6 +162,10 @@ export const signUpAction = async (formData: FormData) => {
     password,
     options: {
       emailRedirectTo: `${origin}/auth/callback`,
+      data: {
+        username,
+        full_name: fullName,
+      },
     },
   });
 

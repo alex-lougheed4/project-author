@@ -1,52 +1,49 @@
-import { PromptWithMetadata } from "@/utils/types";
+import { Story } from "@/utils/types";
 import { voteAction } from "@/app/actions";
 
-export const PromptCard = ({
+export const StoryCard = ({
   id,
-  title,
-  summary,
+  story_title,
+  story_description,
+  word_count,
   author_id,
-  deadline_date,
-  length,
-  story_count,
-  upvotes,
-  downvotes,
   created_at,
   author,
-}: PromptWithMetadata) => {
-  const totalVotes = (upvotes || 0) + (downvotes || 0);
+  votes,
+}: Story) => {
+  const upvotes = votes?.filter((v) => v.vote_type === "upvote").length || 0;
+  const downvotes =
+    votes?.filter((v) => v.vote_type === "downvote").length || 0;
+  const totalVotes = upvotes + downvotes;
   const votePercentage =
-    totalVotes > 0 ? Math.round(((upvotes || 0) / totalVotes) * 100) : 0;
+    totalVotes > 0 ? Math.round((upvotes / totalVotes) * 100) : 0;
 
   const handleVote = async (voteType: "upvote" | "downvote") => {
     const formData = new FormData();
-    formData.append("promptId", id);
+    formData.append("storyId", id);
     formData.append("voteType", voteType);
     await voteAction(formData);
   };
 
   return (
-    <div className="bg-gray-900 shadow-md rounded-lg p-6 mb-4 text-white">
+    <div className="bg-gray-800 shadow-md rounded-lg p-6 mb-4 text-white">
       <div className="flex justify-between items-start mb-4">
-        <h2 className="text-xl font-semibold text-white">{title}</h2>
+        <h3 className="text-lg font-semibold text-white">{story_title}</h3>
         <div className="flex items-center space-x-2">
-          <span className="bg-blue-600 px-2 py-1 rounded text-xs">
-            {length} words
+          <span className="bg-green-600 px-2 py-1 rounded text-xs">
+            {word_count} words
           </span>
-          {deadline_date && (
-            <span className="bg-orange-600 px-2 py-1 rounded text-xs">
-              {new Date(deadline_date).toLocaleDateString()}
-            </span>
-          )}
         </div>
       </div>
 
-      <p className="text-gray-300 mb-4">{summary}</p>
+      <p className="text-gray-300 mb-4 line-clamp-3">{story_description}</p>
 
       <div className="flex justify-between items-center text-sm text-gray-400">
         <div className="flex items-center space-x-4">
           <span>By: {author?.username || author_id}</span>
-          <span>{story_count || 0} stories</span>
+          <span className="text-xs text-gray-500">
+            {new Date(created_at).toLocaleDateString()}
+          </span>
         </div>
 
         <div className="flex items-center space-x-3">
@@ -56,14 +53,14 @@ export const PromptCard = ({
               className="flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
             >
               <span>↑</span>
-              <span>{upvotes || 0}</span>
+              <span>{upvotes}</span>
             </button>
             <button
               onClick={() => handleVote("downvote")}
               className="flex items-center space-x-1 text-red-400 hover:text-red-300 transition-colors"
             >
               <span>↓</span>
-              <span>{downvotes || 0}</span>
+              <span>{downvotes}</span>
             </button>
           </div>
           {totalVotes > 0 && (
@@ -72,10 +69,6 @@ export const PromptCard = ({
             </span>
           )}
         </div>
-      </div>
-
-      <div className="mt-3 text-xs text-gray-500">
-        Created: {new Date(created_at).toLocaleDateString()}
       </div>
     </div>
   );
