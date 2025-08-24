@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+
 import { cookies } from "next/headers";
 
 export const createClient = async () => {
@@ -24,6 +25,11 @@ export const createClient = async () => {
           }
         },
       },
-    },
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    }
   );
 };

@@ -43,7 +43,7 @@ export type Vote = {
   user_id: string;
   prompt_id?: string;
   story_id?: string;
-  vote_type: 'upvote' | 'downvote';
+  vote_type: "upvote" | "downvote";
   created_at: string;
   updated_at: string;
   // Relationships

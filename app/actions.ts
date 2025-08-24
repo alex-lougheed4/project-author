@@ -1,17 +1,25 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { encodedRedirect } from "@/utils/utils";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+
+import { createClient } from "@/utils/supabase/server";
+import { encodedRedirect } from "@/utils/utils";
 
 export const createPromptAction = async (formData: FormData) => {
   const supabase = await createClient();
 
   // Get current user
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) {
-    return encodedRedirect("error", "/create", "You must be signed in to create a prompt");
+    return encodedRedirect(
+      "error",
+      "/create",
+      "You must be signed in to create a prompt"
+    );
   }
 
   const title = formData.get("title")?.toString();
@@ -20,38 +28,47 @@ export const createPromptAction = async (formData: FormData) => {
   const deadlineDate = formData.get("deadlineDate")?.toString();
 
   if (!title || !summary || !length) {
-    return encodedRedirect("error", "/create", "Title, summary, and length are required");
+    return encodedRedirect(
+      "error",
+      "/create",
+      "Title, summary, and length are required"
+    );
   }
 
   if (length <= 0) {
     return encodedRedirect("error", "/create", "Length must be greater than 0");
   }
 
-  const { error } = await supabase
-    .from('prompts')
-    .insert({
-      title,
-      summary,
-      author_id: user.id,
-      length,
-      deadline_date: deadlineDate || null,
-    });
+  const { error } = await supabase.from("prompts").insert({
+    title,
+    summary,
+    author_id: user.id,
+    length,
+    deadline_date: deadlineDate || null,
+  });
 
   if (error) {
     console.error("Error creating prompt:", error);
     return encodedRedirect("error", "/create", "Failed to create prompt");
   }
 
-  return redirect("/home");
+  return redirect("/");
 };
 
 export const createStoryAction = async (formData: FormData) => {
   const supabase = await createClient();
 
   // Get current user
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) {
-    return encodedRedirect("error", "/prompts/[id]", "You must be signed in to create a story");
+    return encodedRedirect(
+      "error",
+      "/prompts/[id]",
+      "You must be signed in to create a story"
+    );
   }
 
   const promptId = formData.get("promptId")?.toString();
@@ -65,15 +82,13 @@ export const createStoryAction = async (formData: FormData) => {
   // Calculate word count
   const wordCount = storyDescription.trim().split(/\s+/).length;
 
-  const { error } = await supabase
-    .from('stories')
-    .insert({
-      story_title: storyTitle,
-      prompt_id: promptId,
-      author_id: user.id,
-      story_description: storyDescription,
-      word_count: wordCount,
-    });
+  const { error } = await supabase.from("stories").insert({
+    story_title: storyTitle,
+    prompt_id: promptId,
+    author_id: user.id,
+    story_description: storyDescription,
+    word_count: wordCount,
+  });
 
   if (error) {
     console.error("Error creating story:", error);
@@ -87,57 +102,60 @@ export const voteAction = async (formData: FormData) => {
   const supabase = await createClient();
 
   // Get current user
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) {
-    return encodedRedirect("error", "/home", "You must be signed in to vote");
+    return encodedRedirect("error", "/", "You must be signed in to vote");
   }
 
   const promptId = formData.get("promptId")?.toString();
   const storyId = formData.get("storyId")?.toString();
-  const voteType = formData.get("voteType")?.toString() as 'upvote' | 'downvote';
+  const voteType = formData.get("voteType")?.toString() as
+    | "upvote"
+    | "downvote";
 
   if (!voteType || (!promptId && !storyId)) {
-    return encodedRedirect("error", "/home", "Invalid vote data");
+    return encodedRedirect("error", "/", "Invalid vote data");
   }
 
   // Check if user already voted
   const { data: existingVote } = await supabase
-    .from('votes')
+    .from("votes")
     .select()
-    .eq('user_id', user.id)
-    .eq(promptId ? 'prompt_id' : 'story_id', promptId || storyId)
+    .eq("user_id", user.id)
+    .eq(promptId ? "prompt_id" : "story_id", promptId || storyId)
     .single();
 
   if (existingVote) {
     // Update existing vote
     const { error } = await supabase
-      .from('votes')
+      .from("votes")
       .update({ vote_type: voteType })
-      .eq('id', existingVote.id);
+      .eq("id", existingVote.id);
 
     if (error) {
       console.error("Error updating vote:", error);
-      return encodedRedirect("error", "/home", "Failed to update vote");
+      return encodedRedirect("error", "/", "Failed to update vote");
     }
   } else {
     // Create new vote
-    const { error } = await supabase
-      .from('votes')
-      .insert({
-        user_id: user.id,
-        prompt_id: promptId || null,
-        story_id: storyId || null,
-        vote_type: voteType,
-      });
+    const { error } = await supabase.from("votes").insert({
+      user_id: user.id,
+      prompt_id: promptId || null,
+      story_id: storyId || null,
+      vote_type: voteType,
+    });
 
     if (error) {
       console.error("Error creating vote:", error);
-      return encodedRedirect("error", "/home", "Failed to create vote");
+      return encodedRedirect("error", "/", "Failed to create vote");
     }
   }
 
   // Redirect back to the same page
-  return redirect(promptId ? `/prompts/${promptId}` : '/home');
+  return redirect(promptId ? `/prompts/${promptId}` : "/");
 };
 
 export const signUpAction = async (formData: FormData) => {
@@ -195,7 +213,7 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-in", error.message);
   }
 
-  return redirect("/home");
+  return redirect("/");
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {

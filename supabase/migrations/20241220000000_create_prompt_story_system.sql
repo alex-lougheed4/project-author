@@ -123,7 +123,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 12. Create view for prompts with metadata
-CREATE VIEW prompts_with_metadata AS
+CREATE VIEW prompts_with_metadata 
+WITH (security_invoker = true) AS
 SELECT 
   p.*,
   COUNT(s.id) as story_count,

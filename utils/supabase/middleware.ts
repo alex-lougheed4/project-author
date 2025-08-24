@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+
 import { type NextRequest, NextResponse } from "next/server";
 
 export const updateSession = async (request: NextRequest) => {
@@ -32,19 +33,43 @@ export const updateSession = async (request: NextRequest) => {
             );
           },
         },
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: false,
+        },
       }
     );
 
     // This will refresh session if expired - required for Server Components
     // https://supabase.com/docs/guides/auth/server-side/nextjs
-    const user = await supabase.auth.getUser();
+    const { error: userError } = await supabase.auth.getUser();
+
+    // If there's a JWT error, try to refresh the session
+    if (userError && userError.message.includes("JWS")) {
+      try {
+        const {
+          data: { session },
+          error: refreshError,
+        } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          // Clear invalid cookies
+          response.cookies.delete("sb-access-token");
+          response.cookies.delete("sb-refresh-token");
+        }
+      } catch (refreshError) {
+        // Clear invalid cookies on any error
+        response.cookies.delete("sb-access-token");
+        response.cookies.delete("sb-refresh-token");
+      }
+    }
 
     // protected routes
-    if (request.nextUrl.pathname.startsWith("/protected") && user.error) {
+    if (request.nextUrl.pathname.startsWith("/protected") && userError) {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 
-    //if (request.nextUrl.pathname === "/" && !user.error) {
+    //if (request.nextUrl.pathname === "/" && !userError) {
     //  return NextResponse.redirect(new URL("/protected", request.url));
     //}
 

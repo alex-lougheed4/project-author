@@ -1,7 +1,9 @@
 "use client";
-import { CreatePromptModal } from "@/components/CreatePromptModal";
-import { createPromptAction } from "@/app/actions";
+
 import { useState } from "react";
+
+import { createPromptAction } from "@/app/actions";
+import { CreatePromptModal } from "@/components/CreatePromptModal";
 
 export default function Create() {
   const [error, setError] = useState<string | null>(null);

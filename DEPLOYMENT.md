@@ -57,6 +57,7 @@ npm run start
 ## 🔄 Development vs Production Workflow
 
 ### Local Development
+
 ```bash
 # Start local environment with sample data
 npm run db:local
@@ -66,6 +67,7 @@ npm run dev
 ```
 
 ### Production Deployment
+
 ```bash
 # Link to production
 npm run db:prod YOUR_PROJECT_REF
@@ -99,12 +101,14 @@ npm run db:deploy
 ### Common Issues
 
 #### "Project not linked"
+
 ```bash
 # Re-link to production
 npm run db:prod YOUR_PROJECT_REF
 ```
 
 #### "Migration failed"
+
 ```bash
 # Check migration status
 npm run supabase:status
@@ -114,6 +118,7 @@ supabase db pull
 ```
 
 #### "Environment variables missing"
+
 - Verify `.env.production` exists
 - Check Vercel environment variables
 - Ensure all required variables are set
@@ -179,4 +184,4 @@ supabase db pull
 
 ---
 
-For more help, check the [Supabase documentation](https://supabase.com/docs) or your project's README. 
+For more help, check the [Supabase documentation](https://supabase.com/docs) or your project's README.

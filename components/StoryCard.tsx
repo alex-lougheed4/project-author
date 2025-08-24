@@ -1,5 +1,8 @@
-import { Story } from "@/utils/types";
+"use client";
+
 import { voteAction } from "@/app/actions";
+import { formatDateReadable } from "@/utils/date-utils";
+import { Story } from "@/utils/types";
 
 export const StoryCard = ({
   id,
@@ -11,6 +14,7 @@ export const StoryCard = ({
   author,
   votes,
 }: Story) => {
+  // Use the votes array if available, otherwise default to 0
   const upvotes = votes?.filter((v) => v.vote_type === "upvote").length || 0;
   const downvotes =
     votes?.filter((v) => v.vote_type === "downvote").length || 0;
@@ -42,7 +46,7 @@ export const StoryCard = ({
         <div className="flex items-center space-x-4">
           <span>By: {author?.username || author_id}</span>
           <span className="text-xs text-gray-500">
-            {new Date(created_at).toLocaleDateString()}
+            {formatDateReadable(created_at)}
           </span>
         </div>
 

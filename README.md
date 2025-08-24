@@ -110,7 +110,7 @@ The project uses environment-specific configuration files:
 # Setup local development environment
 npm run db:local
 
-# Link to production environment  
+# Link to production environment
 npm run db:prod YOUR_PROJECT_REF
 
 # Deploy to production
@@ -144,10 +144,11 @@ chmod +x scripts/supabase-setup.sh
 ### Prerequisites
 
 1. **Install Supabase CLI**
+
    ```bash
    # Using Homebrew (macOS)
    brew install supabase/tap/supabase
-   
+
    # Or download binary directly
    curl -fsSL https://supabase.com/install.sh | sh
    ```
@@ -159,6 +160,7 @@ chmod +x scripts/supabase-setup.sh
 ### Local Development Workflow
 
 #### 1. Start Local Supabase Instance
+
 ```bash
 # Start local Supabase (creates local database, API, and Studio)
 supabase start
@@ -171,6 +173,7 @@ supabase start
 ```
 
 #### 2. Apply Database Migrations
+
 ```bash
 # Apply all migrations to local database
 supabase db reset
@@ -180,6 +183,7 @@ supabase migration up
 ```
 
 #### 3. Seed the Database (Optional)
+
 ```bash
 # Apply migrations and seed data
 supabase db reset --seed
@@ -190,7 +194,9 @@ psql postgresql://postgres:postgres@localhost:54322/postgres -f supabase/seed.sq
 ```
 
 #### 3. Set Environment Variables for Local Development
+
 Create `.env.local` with your local Supabase credentials:
+
 ```bash
 # Local development environment
 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
@@ -198,6 +204,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
 ```
 
 #### 4. Start Your Next.js App
+
 ```bash
 npm run dev
 # or
@@ -207,6 +214,7 @@ yarn dev
 ```
 
 #### 5. Access Local Tools
+
 - **Supabase Studio**: http://localhost:54323 (database management)
 - **API**: http://localhost:54321
 - **Database**: localhost:54322
@@ -215,6 +223,7 @@ yarn dev
 ### Working with Sample Data
 
 The local database is completely isolated from production, so you can:
+
 - Add test users and data
 - Experiment with schema changes
 - Test features without affecting production
@@ -223,6 +232,7 @@ The local database is completely isolated from production, so you can:
 #### Sample Data Included
 
 The seed file (`supabase/seed.sql`) includes:
+
 - **5 sample profiles** with different writing styles and backgrounds
 - **8 creative writing prompts** covering various genres (sci-fi, mystery, fantasy, etc.)
 - **5 sample stories** written in response to prompts
@@ -230,6 +240,7 @@ The seed file (`supabase/seed.sql`) includes:
 - **Realistic content** with proper word counts, deadlines, and metadata
 
 Sample prompts include:
+
 - "The Last Library on Earth" (post-apocalyptic)
 - "Time Traveler's Dilemma" (sci-fi)
 - "The Restaurant at the End of the Universe" (fantasy)
