@@ -152,3 +152,20 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Add constraints to enforce limits
+ALTER TABLE stories ADD CONSTRAINT check_word_count CHECK (word_count <= 10000);
+ALTER TABLE stories ADD CONSTRAINT check_story_title_length CHECK (char_length(story_title) <= 200);
+ALTER TABLE stories ADD CONSTRAINT check_story_description_length CHECK (char_length(story_description) <= 100000);
+
+ALTER TABLE prompts ADD CONSTRAINT check_title_length CHECK (char_length(title) <= 200);
+ALTER TABLE prompts ADD CONSTRAINT check_summary_length CHECK (char_length(summary) <= 2000);
+ALTER TABLE prompts ADD CONSTRAINT check_length_positive CHECK (length > 0);
+
+-- Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_stories_author_id ON stories(author_id);
+CREATE INDEX IF NOT EXISTS idx_stories_created_at ON stories(created_at);
+CREATE INDEX IF NOT EXISTS idx_stories_prompt_id ON stories(prompt_id);
+
+CREATE INDEX IF NOT EXISTS idx_prompts_author_id ON prompts(author_id);
+CREATE INDEX IF NOT EXISTS idx_prompts_created_at ON prompts(created_at);

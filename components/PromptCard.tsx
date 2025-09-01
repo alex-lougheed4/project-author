@@ -4,7 +4,34 @@ import Link from "next/link";
 
 import { voteAction } from "@/app/actions";
 import { formatDate, formatDateReadable } from "@/utils/date-utils";
-import { PromptWithMetadata } from "@/utils/types";
+
+import { Tables } from "../database.types";
+
+// Use generated type for prompts with metadata and extend it with author info
+type PromptWithMetadata = Tables<"prompts_with_metadata"> & {
+  author?: Tables<"profiles">;
+};
+
+/*
+ * Usage Example for Action Responses:
+ *
+ * The new action pattern returns either:
+ * - Success: { data: "Success message" }
+ * - Error: { error: "Error message", code: "ERROR_CODE" }
+ * - Undefined: Redirect happened
+ *
+ * Example usage:
+ * const result = await voteAction(formData);
+ *
+ * if (result?.error) {
+ *   console.log(`Action failed: ${result.error} (Code: ${result.code})`);
+ *   // Handle error in your UI
+ * } else if (result?.data) {
+ *   console.log(`Action succeeded: ${result.data}`);
+ *   // Handle success in your UI
+ * }
+ * // If result is undefined, it means a redirect happened
+ */
 
 export const PromptCard = ({
   id,
@@ -27,11 +54,27 @@ export const PromptCard = ({
     const formData = new FormData();
     formData.append("promptId", id);
     formData.append("voteType", voteType);
-    await voteAction(formData);
+
+    try {
+      const result = await voteAction(formData);
+
+      if (result?.error) {
+        console.log(`Vote failed: ${result.error} (Code: ${result.code})`);
+        // You can add error handling here, like showing a toast notification
+        // or updating the UI to reflect the error state
+      } else if (result?.data) {
+        console.log(`Vote succeeded: ${result.data}`);
+        // You can add success handling here, like showing a success message
+        // or updating the UI optimistically
+      }
+      // If result is undefined, it means a redirect happened
+    } catch (error) {
+      console.error("Unexpected error during vote:", error);
+    }
   };
 
   return (
-    <div className="flex flex-col justify-evenly bg-gray-900 shadow-md min-h-[450px] rounded-lg p-6 mb-4 text-white">
+    <article className="flex flex-col justify-evenly bg-gray-900 shadow-md min-h-[450px] rounded-lg p-6 mb-4 text-white">
       <div className="flex flex-col justify-between items-start mb-4 gap-4">
         <Link href={`/prompts/${id}`} className="hover:underline">
           <h2 className="text-xl font-semibold text-white">{title}</h2>
@@ -60,16 +103,18 @@ export const PromptCard = ({
           <div className="flex items-center space-x-2">
             <button
               onClick={() => handleVote("upvote")}
+              aria-label={`Upvote this prompt (${upvotes || 0} upvotes)`}
               className="flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
             >
-              <span>↑</span>
+              <span aria-hidden="true">↑</span>
               <span>{upvotes || 0}</span>
             </button>
             <button
               onClick={() => handleVote("downvote")}
+              aria-label={`Downvote this prompt (${downvotes || 0} downvotes)`}
               className="flex items-center space-x-1 text-red-400 hover:text-red-300 transition-colors"
             >
-              <span>↓</span>
+              <span aria-hidden="true">↓</span>
               <span>{downvotes || 0}</span>
             </button>
           </div>
@@ -93,6 +138,6 @@ export const PromptCard = ({
           View Stories ({story_count || 0})
         </Link>
       </div>
-    </div>
+    </article>
   );
 };

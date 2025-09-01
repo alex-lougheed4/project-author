@@ -26,7 +26,10 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
-    <nav className="w-full bg-background border-b border-border text-foreground shadow-sm">
+    <nav
+      className="w-full bg-background border-b border-border text-foreground shadow-sm"
+      role="navigation"
+    >
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -78,6 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
                 <button
                   onClick={handleAvatarClick}
                   className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-lg font-bold text-primary-foreground focus:outline-none hover:bg-primary/90"
+                  aria-label="User menu"
                 >
                   {user.email?.charAt(0).toUpperCase() || "U"}
                 </button>

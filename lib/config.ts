@@ -2,65 +2,49 @@
 // This file automatically detects the environment and uses appropriate settings
 
 export const config = {
-  // Environment detection
-  environment: process.env.NEXT_PUBLIC_ENVIRONMENT || "development",
-
-  // Supabase configuration
-  supabase: {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  // Content limits
+  content: {
+    maxStoryWordCount: parseInt(process.env.MAX_STORY_WORD_COUNT || "10000"),
+    maxStoryContentLength: parseInt(
+      process.env.MAX_STORY_CONTENT_LENGTH || "100000"
+    ),
+    maxStoryTitleLength: parseInt(process.env.MAX_STORY_TITLE_LENGTH || "200"),
+    maxPromptTitleLength: parseInt(
+      process.env.MAX_PROMPT_TITLE_LENGTH || "200"
+    ),
+    maxPromptSummaryLength: parseInt(
+      process.env.MAX_PROMPT_SUMMARY_LENGTH || "2000"
+    ),
   },
 
-  // App configuration
-  app: {
-    url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  // Rate limiting
+  rateLimit: {
+    maxPromptsPerHour: parseInt(process.env.MAX_PROMPTS_PER_HOUR || "5"),
+    maxStoriesPerHour: parseInt(process.env.MAX_STORIES_PER_HOUR || "3"),
+    maxVotesPerHour: parseInt(process.env.MAX_VOTES_PER_HOUR || "50"),
   },
 
-  // Feature flags based on environment
+  // Content filtering
+  contentFilter: {
+    bannedWords: (
+      process.env.BANNED_WORDS || "spam,inappropriate,offensive"
+    ).split(","),
+    enableContentFilter: process.env.ENABLE_CONTENT_FILTER !== "false",
+  },
+
+  // Feature flags
   features: {
-    // Enable debugging in development
-    debug: process.env.NEXT_PUBLIC_ENVIRONMENT === "development",
-
-    // Enable analytics in production
-    analytics: process.env.NEXT_PUBLIC_ENVIRONMENT === "production",
-
-    // Enable detailed logging in development
-    detailedLogging: process.env.NEXT_PUBLIC_ENVIRONMENT === "development",
+    enableStoryCreation: process.env.ENABLE_STORY_CREATION !== "false",
+    enablePromptCreation: process.env.ENABLE_PROMPT_CREATION !== "false",
+    enableVoting: process.env.ENABLE_VOTING !== "false",
   },
 
-  // Validation
-  validate() {
-    if (!this.supabase.url) {
-      throw new Error("NEXT_PUBLIC_SUPABASE_URL is required");
-    }
-    if (!this.supabase.anonKey) {
-      throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is required");
-    }
+  // Security
+  security: {
+    requireEmailVerification:
+      process.env.REQUIRE_EMAIL_VERIFICATION !== "false",
+    sessionTimeoutMs: parseInt(process.env.SESSION_TIMEOUT_MS || "3600000"), // 1 hour
   },
-
-  // Helper to check if we're in development
-  isDevelopment() {
-    return this.environment === "development";
-  },
-
-  // Helper to check if we're in production
-  isProduction() {
-    return this.environment === "production";
-  },
-
-  // Helper to get environment info
-  getEnvironmentInfo() {
-    return {
-      environment: this.environment,
-      supabaseUrl: this.supabase.url,
-      appUrl: this.app.url,
-      isLocal: this.supabase.url.includes("localhost"),
-      isRemote: !this.supabase.url.includes("localhost"),
-    };
-  },
-};
-
-// Validate configuration on import
-config.validate();
+} as const;
 
 export default config;

@@ -9,17 +9,9 @@ module.exports = {
       jsx: true,
     },
   },
-  plugins: [
-    "@typescript-eslint",
-    "react",
-    "react-hooks",
-    "jsx-a11y",
-    "import",
-    "prettier",
-  ],
+  plugins: ["@typescript-eslint", "react", "react-hooks", "jsx-a11y", "import"],
   rules: {
-    // Prettier integration
-    "prettier/prettier": "error",
+    // Prettier integration - removed to prevent conflicts
 
     // React specific rules
     "react/react-in-jsx-scope": "off",
@@ -40,6 +32,13 @@ module.exports = {
     "no-console": "warn",
     "no-debugger": "error",
     "no-duplicate-imports": "error",
+
+    // Disable rules that conflict with Prettier
+    indent: "off",
+    quotes: "off",
+    semi: "off",
+    "comma-dangle": "off",
+    "max-len": "off",
 
     // Import/Export rules
     // "import/order": [

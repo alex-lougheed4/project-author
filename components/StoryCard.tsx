@@ -2,7 +2,11 @@
 
 import { voteAction } from "@/app/actions";
 import { formatDateReadable } from "@/utils/date-utils";
-import { Story } from "@/utils/types";
+
+import { Tables } from "../database.types";
+
+// Use generated type for stories
+type Story = Tables<"stories">;
 
 export const StoryCard = ({
   id,

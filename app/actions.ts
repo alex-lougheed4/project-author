@@ -3,10 +3,55 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { config } from "@/lib/config";
 import { createClient } from "@/utils/supabase/server";
-import { encodedRedirect } from "@/utils/utils";
 
-export const createPromptAction = async (formData: FormData) => {
+import { TablesInsert } from "../database.types";
+
+// Type aliases for better readability
+type PromptInsert = TablesInsert<"prompts">;
+type StoryInsert = TablesInsert<"stories">;
+type VoteInsert = TablesInsert<"votes">;
+
+// Define error response type
+type ActionResponse =
+  | { data: unknown; error?: never }
+  | { error: string; code?: string; data?: never };
+
+// Simple in-memory rate limiting (for production, use Redis or similar)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+// Export function to clear rate limit map for testing
+export const clearRateLimitMap = async () => {
+  rateLimitMap.clear();
+};
+
+const checkRateLimit = (
+  userId: string,
+  action: string,
+  maxAttempts: number,
+  windowMs: number
+): boolean => {
+  const key = `${userId}:${action}`;
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(key);
+
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (userLimit.count >= maxAttempts) {
+    return false;
+  }
+
+  userLimit.count++;
+  return true;
+};
+
+export const createPromptAction = async (
+  formData: FormData
+): Promise<ActionResponse | void> => {
   const supabase = await createClient();
 
   // Get current user
@@ -15,11 +60,26 @@ export const createPromptAction = async (formData: FormData) => {
     error: userError,
   } = await supabase.auth.getUser();
   if (userError || !user) {
-    return encodedRedirect(
-      "error",
-      "/create",
-      "You must be signed in to create a prompt"
-    );
+    return {
+      error: "You must be signed in to create a prompt",
+      code: "UNAUTHORIZED",
+    };
+  }
+
+  // Rate limiting: max prompts per hour from config
+  if (
+    !checkRateLimit(
+      user.id,
+      "createPrompt",
+      config.rateLimit.maxPromptsPerHour,
+      60 * 60 * 1000
+    )
+  ) {
+    return {
+      error:
+        "Too many prompt submissions. Please wait before creating another prompt.",
+      code: "RATE_LIMIT",
+    };
   }
 
   const title = formData.get("title")?.toString();
@@ -28,34 +88,73 @@ export const createPromptAction = async (formData: FormData) => {
   const deadlineDate = formData.get("deadlineDate")?.toString();
 
   if (!title || !summary || !length) {
-    return encodedRedirect(
-      "error",
-      "/create",
-      "Title, summary, and length are required"
-    );
+    return {
+      error: "Title, summary, and length are required",
+      code: "VALIDATION_ERROR",
+    };
   }
 
   if (length <= 0) {
-    return encodedRedirect("error", "/create", "Length must be greater than 0");
+    return {
+      error: "Length must be greater than 0",
+      code: "VALIDATION_ERROR",
+    };
   }
 
-  const { error } = await supabase.from("prompts").insert({
+  // Server-side validation using config
+  if (title.length > config.content.maxPromptTitleLength) {
+    return {
+      error: `Title too long. Maximum allowed is ${config.content.maxPromptTitleLength} characters. Current: ${title.length} characters.`,
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  if (summary.length > config.content.maxPromptSummaryLength) {
+    return {
+      error: `Summary too long. Maximum allowed is ${config.content.maxPromptSummaryLength} characters. Current: ${summary.length} characters.`,
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  // Basic content filtering using config
+  if (config.contentFilter.enableContentFilter) {
+    const hasBannedContent = config.contentFilter.bannedWords.some((word) =>
+      (title.toLowerCase() + " " + summary.toLowerCase()).includes(word)
+    );
+
+    if (hasBannedContent) {
+      return {
+        error:
+          "Content contains inappropriate language. Please review and try again.",
+        code: "CONTENT_FILTER",
+      };
+    }
+  }
+
+  const promptData: PromptInsert = {
     title,
     summary,
     author_id: user.id,
     length,
     deadline_date: deadlineDate || null,
-  });
+  };
+
+  const { error } = await supabase.from("prompts").insert(promptData);
 
   if (error) {
     console.error("Error creating prompt:", error);
-    return encodedRedirect("error", "/create", "Failed to create prompt");
+    return {
+      error: "Failed to create prompt",
+      code: "DATABASE_ERROR",
+    };
   }
 
   return redirect("/");
 };
 
-export const createStoryAction = async (formData: FormData) => {
+export const createStoryAction = async (
+  formData: FormData
+): Promise<ActionResponse | void> => {
   const supabase = await createClient();
 
   // Get current user
@@ -64,11 +163,26 @@ export const createStoryAction = async (formData: FormData) => {
     error: userError,
   } = await supabase.auth.getUser();
   if (userError || !user) {
-    return encodedRedirect(
-      "error",
-      "/prompts/[id]",
-      "You must be signed in to create a story"
-    );
+    return {
+      error: "You must be signed in to create a story",
+      code: "UNAUTHORIZED",
+    };
+  }
+
+  // Rate limiting: max stories per hour from config
+  if (
+    !checkRateLimit(
+      user.id,
+      "createStory",
+      config.rateLimit.maxStoriesPerHour,
+      60 * 60 * 1000
+    )
+  ) {
+    return {
+      error:
+        "Too many story submissions. Please wait before creating another story.",
+      code: "RATE_LIMIT",
+    };
   }
 
   const promptId = formData.get("promptId")?.toString();
@@ -76,29 +190,75 @@ export const createStoryAction = async (formData: FormData) => {
   const storyDescription = formData.get("storyDescription")?.toString();
 
   if (!promptId || !storyTitle || !storyDescription) {
-    return encodedRedirect("error", "/prompts/[id]", "All fields are required");
+    return {
+      error: "All fields are required",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  // Server-side word count validation using config
+  const wordCount = storyDescription
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0).length;
+
+  if (wordCount > config.content.maxStoryWordCount) {
+    return {
+      error: `Story exceeds maximum word limit of ${config.content.maxStoryWordCount.toLocaleString()} words. Current: ${wordCount.toLocaleString()} words.`,
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  // Content length validation using config
+  if (storyDescription.length > config.content.maxStoryContentLength) {
+    return {
+      error: `Story content too long. Maximum allowed is ${config.content.maxStoryContentLength.toLocaleString()} characters. Current: ${storyDescription.length.toLocaleString()} characters.`,
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  // Basic content filtering using config
+  if (config.contentFilter.enableContentFilter) {
+    const hasBannedContent = config.contentFilter.bannedWords.some((word) =>
+      storyDescription.toLowerCase().includes(word)
+    );
+
+    if (hasBannedContent) {
+      return {
+        error:
+          "Story content contains inappropriate language. Please review and try again.",
+        code: "CONTENT_FILTER",
+      };
+    }
   }
 
   // Calculate word count
-  const wordCount = storyDescription.trim().split(/\s+/).length;
+  const calculatedWordCount = wordCount;
 
-  const { error } = await supabase.from("stories").insert({
+  const storyData: StoryInsert = {
     story_title: storyTitle,
     prompt_id: promptId,
     author_id: user.id,
     story_description: storyDescription,
-    word_count: wordCount,
-  });
+    word_count: calculatedWordCount,
+  };
+
+  const { error } = await supabase.from("stories").insert(storyData);
 
   if (error) {
     console.error("Error creating story:", error);
-    return encodedRedirect("error", "/prompts/[id]", "Failed to create story");
+    return {
+      error: "Failed to create story",
+      code: "DATABASE_ERROR",
+    };
   }
 
   return redirect(`/prompts/${promptId}`);
 };
 
-export const voteAction = async (formData: FormData) => {
+export const voteAction = async (
+  formData: FormData
+): Promise<ActionResponse | void> => {
   const supabase = await createClient();
 
   // Get current user
@@ -106,18 +266,31 @@ export const voteAction = async (formData: FormData) => {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
+
   if (userError || !user) {
-    return encodedRedirect("error", "/", "You must be signed in to vote");
+    return {
+      error: "You must be signed in to vote",
+      code: "UNAUTHORIZED",
+    };
   }
 
   const promptId = formData.get("promptId")?.toString();
   const storyId = formData.get("storyId")?.toString();
-  const voteType = formData.get("voteType")?.toString() as
-    | "upvote"
-    | "downvote";
+  const voteType = formData.get("voteType")?.toString();
 
   if (!voteType || (!promptId && !storyId)) {
-    return encodedRedirect("error", "/", "Invalid vote data");
+    return {
+      error: "Invalid vote data",
+      code: "VALIDATION_ERROR",
+    };
+  }
+
+  // Validate vote type
+  if (voteType !== "upvote" && voteType !== "downvote") {
+    return {
+      error: "Invalid vote data",
+      code: "VALIDATION_ERROR",
+    };
   }
 
   // Check if user already voted
@@ -125,7 +298,7 @@ export const voteAction = async (formData: FormData) => {
     .from("votes")
     .select()
     .eq("user_id", user.id)
-    .eq(promptId ? "prompt_id" : "story_id", promptId || storyId)
+    .eq(promptId ? "prompt_id" : "story_id", promptId || storyId || "")
     .single();
 
   if (existingVote) {
@@ -137,20 +310,28 @@ export const voteAction = async (formData: FormData) => {
 
     if (error) {
       console.error("Error updating vote:", error);
-      return encodedRedirect("error", "/", "Failed to update vote");
+      return {
+        error: "Failed to update vote",
+        code: "DATABASE_ERROR",
+      };
     }
   } else {
     // Create new vote
-    const { error } = await supabase.from("votes").insert({
+    const voteData: VoteInsert = {
       user_id: user.id,
       prompt_id: promptId || null,
       story_id: storyId || null,
       vote_type: voteType,
-    });
+    };
+
+    const { error } = await supabase.from("votes").insert(voteData);
 
     if (error) {
       console.error("Error creating vote:", error);
-      return encodedRedirect("error", "/", "Failed to create vote");
+      return {
+        error: "Failed to create vote",
+        code: "DATABASE_ERROR",
+      };
     }
   }
 
@@ -158,7 +339,9 @@ export const voteAction = async (formData: FormData) => {
   return redirect(promptId ? `/prompts/${promptId}` : "/");
 };
 
-export const signUpAction = async (formData: FormData) => {
+export const signUpAction = async (
+  formData: FormData
+): Promise<ActionResponse | void> => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
   const username = formData.get("username")?.toString();
@@ -168,11 +351,10 @@ export const signUpAction = async (formData: FormData) => {
   const origin = (await headers()).get("origin");
 
   if (!email || !password || !username) {
-    return encodedRedirect(
-      "error",
-      "/sign-up",
-      "Email, password, and username are required"
-    );
+    return {
+      error: "Email, password, and username are required",
+      code: "VALIDATION_ERROR",
+    };
   }
 
   const { error } = await supabase.auth.signUp({
@@ -189,17 +371,20 @@ export const signUpAction = async (formData: FormData) => {
 
   if (error) {
     console.error(error.code + " " + error.message);
-    return encodedRedirect("error", "/sign-up", error.message);
+    return {
+      error: error.message,
+      code: error.code || "AUTH_ERROR",
+    };
   } else {
-    return encodedRedirect(
-      "success",
-      "/sign-up",
-      "Thanks for signing up! Please check your email for a verification link."
-    );
+    return {
+      data: "Thanks for signing up! Please check your email for a verification link.",
+    };
   }
 };
 
-export const signInAction = async (formData: FormData) => {
+export const signInAction = async (
+  formData: FormData
+): Promise<ActionResponse | void> => {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const supabase = await createClient();
@@ -210,20 +395,28 @@ export const signInAction = async (formData: FormData) => {
   });
 
   if (error) {
-    return encodedRedirect("error", "/sign-in", error.message);
+    return {
+      error: error.message,
+      code: error.code || "AUTH_ERROR",
+    };
   }
 
   return redirect("/");
 };
 
-export const forgotPasswordAction = async (formData: FormData) => {
+export const forgotPasswordAction = async (
+  formData: FormData
+): Promise<ActionResponse | void> => {
   const email = formData.get("email")?.toString();
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
   const callbackUrl = formData.get("callbackUrl")?.toString();
 
   if (!email) {
-    return encodedRedirect("error", "/forgot-password", "Email is required");
+    return {
+      error: "Email is required",
+      code: "VALIDATION_ERROR",
+    };
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -232,44 +425,41 @@ export const forgotPasswordAction = async (formData: FormData) => {
 
   if (error) {
     console.error(error.message);
-    return encodedRedirect(
-      "error",
-      "/forgot-password",
-      "Could not reset password"
-    );
+    return {
+      error: "Could not reset password",
+      code: "AUTH_ERROR",
+    };
   }
 
   if (callbackUrl) {
     return redirect(callbackUrl);
   }
 
-  return encodedRedirect(
-    "success",
-    "/forgot-password",
-    "Check your email for a link to reset your password."
-  );
+  return {
+    data: "Check your email for a link to reset your password.",
+  };
 };
 
-export const resetPasswordAction = async (formData: FormData) => {
+export const resetPasswordAction = async (
+  formData: FormData
+): Promise<ActionResponse | void> => {
   const supabase = await createClient();
 
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
 
   if (!password || !confirmPassword) {
-    encodedRedirect(
-      "error",
-      "/protected/reset-password",
-      "Password and confirm password are required"
-    );
+    return {
+      error: "Password and confirm password are required",
+      code: "VALIDATION_ERROR",
+    };
   }
 
   if (password !== confirmPassword) {
-    encodedRedirect(
-      "error",
-      "/protected/reset-password",
-      "Passwords do not match"
-    );
+    return {
+      error: "Passwords do not match",
+      code: "VALIDATION_ERROR",
+    };
   }
 
   const { error } = await supabase.auth.updateUser({
@@ -277,14 +467,15 @@ export const resetPasswordAction = async (formData: FormData) => {
   });
 
   if (error) {
-    encodedRedirect(
-      "error",
-      "/protected/reset-password",
-      "Password update failed"
-    );
+    return {
+      error: "Password update failed",
+      code: "AUTH_ERROR",
+    };
   }
 
-  encodedRedirect("success", "/protected/reset-password", "Password updated");
+  return {
+    data: "Password updated successfully",
+  };
 };
 
 export const signOutAction = async () => {
